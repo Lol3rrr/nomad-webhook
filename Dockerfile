@@ -1,7 +1,7 @@
 # Based on https://kerkour.com/rust-small-docker-image
 FROM rust:1.66 AS builder
 
-WORKDIR /server/server
+WORKDIR /server/nomad-webhook
 
 # Create appuser
 ENV USER=server
@@ -20,7 +20,7 @@ RUN rustup target add x86_64-unknown-linux-musl
 RUN apt update && apt install -y musl-tools musl-dev
 RUN update-ca-certificates
 
-COPY ./ /server/server
+COPY ./ /server/nomad-webhook
 
 RUN cargo build --target x86_64-unknown-linux-musl --release
 
@@ -33,7 +33,7 @@ COPY --from=builder /etc/group /etc/group
 WORKDIR /server
 
 # Copy our build
-COPY --from=builder /server/server/target/x86_64-unknown-linux-musl/release/nomad-webhook ./
+COPY --from=builder /server/nomad-webhook/target/x86_64-unknown-linux-musl/release/nomad-webhook ./
 
 # Use an unprivileged user.
 USER server:server
