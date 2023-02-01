@@ -33,9 +33,9 @@ COPY --from=builder /etc/group /etc/group
 WORKDIR /server
 
 # Copy our build
-COPY --from=builder /server/server/target/x86_64-unknown-linux-musl/release/server ./
+COPY --from=builder /server/server/target/x86_64-unknown-linux-musl/release/nomad-webhook ./
 
 # Use an unprivileged user.
 USER server:server
 
-CMD ["/server/server"]
+CMD ["/server/nomad-webhook"]
