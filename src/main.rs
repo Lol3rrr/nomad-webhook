@@ -6,7 +6,7 @@ use axum::{
     routing::post,
     Json, Router,
 };
-use nomad_webhook::{NomadConfig, Task};
+use nomad_webhook::{webhook, NomadConfig, Task};
 use tracing::instrument;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
@@ -48,7 +48,7 @@ async fn main() {
         .unwrap();
 }
 
-#[instrument(skip(name, state, content))]
+#[instrument(skip(state, content))]
 async fn webhook(
     Path(name): Path<String>,
     State(state): State<Arc<AppState>>,
@@ -60,7 +60,15 @@ async fn webhook(
 
     task.perform(&state.config, &state.client).await;
 
-    tracing::info!("Webhook '{name}' with content: {:#?}", content);
+    tracing::info!("Webhook '{name}'");
+
+    if webhook::GithubPackagePayload::is_package(&content) {
+        let payload = webhook::GithubPackagePayload::into_package(content).unwrap();
+
+        tracing::info!("Payload: {:#?}", payload);
+    } else {
+        tracing::info!("Unknown Payload: {:#?}", content);
+    }
 
     axum::response::Response::builder()
         .status(200)

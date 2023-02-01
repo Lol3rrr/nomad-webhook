@@ -3,9 +3,32 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 pub struct GithubPackagePayload {
     action: String,
-    package: serde_json::Value,
+    package: GithubPackage,
     repository: serde_json::Value,
     sender: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GithubPackage {
+    name: String,
+    namespace: String,
+    package_type: String,
+    package_version: GithubPackageVersion,
+    registry: GithubPacakgeRegistry,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GithubPackageVersion {
+    name: String,
+    tag_name: String,
+    version: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GithubPacakgeRegistry {
+    name: String,
+    url: String,
+    vendor: String,
 }
 
 impl GithubPackagePayload {
