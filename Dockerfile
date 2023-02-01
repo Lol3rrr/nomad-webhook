@@ -20,8 +20,7 @@ RUN rustup target add x86_64-unknown-linux-musl
 RUN apt update && apt install -y musl-tools musl-dev
 RUN update-ca-certificates
 
-COPY ./server /server/server
-COPY ./mocks /server/mocks
+COPY ./ /server/server
 
 RUN cargo build --target x86_64-unknown-linux-musl --release
 
