@@ -48,7 +48,7 @@ async fn main() {
         .unwrap();
 }
 
-#[instrument]
+#[instrument(skip(name, state, content))]
 async fn webhook(
     Path(name): Path<String>,
     State(state): State<Arc<AppState>>,
@@ -60,7 +60,10 @@ async fn webhook(
 
     task.perform(&state.config, &state.client).await;
 
-    tracing::info!("Webhook {name} with content: {:#?}", content);
+    tracing::info!("Webhook '{name}' with content: {:#?}", content);
 
-    todo!()
+    axum::response::Response::builder()
+        .status(200)
+        .body(String::new())
+        .unwrap()
 }
