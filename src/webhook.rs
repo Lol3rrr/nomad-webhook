@@ -10,8 +10,10 @@ pub struct GithubPackagePayload {
 
 #[derive(Debug, Deserialize)]
 pub struct GithubPackage {
+    ic: usize,
     name: String,
     namespace: String,
+    description: String,
     package_type: String,
     package_version: GithubPackageVersion,
     registry: GithubPacakgeRegistry,
@@ -22,6 +24,19 @@ pub struct GithubPackageVersion {
     name: String,
     tag_name: String,
     version: String,
+    container_metadata: GithubContainerMetadata,
+    package_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GithubContainerMetadata {
+    tag: GithubContainerTag,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GithubContainerTag {
+    name: String,
+    digest: String,
 }
 
 #[derive(Debug, Deserialize)]
