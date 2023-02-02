@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, future::IntoFuture, net::SocketAddr, sync::Arc};
 
 use axum::{
     extract::{Path, State},
@@ -14,6 +14,7 @@ use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::Subs
 struct AppState {
     config: NomadConfig,
     client: reqwest::Client,
+    task_map: HashMap<String, HashMap<String, Task>>,
 }
 
 #[tokio::main]
@@ -36,9 +37,28 @@ async fn main() {
 
     let client = reqwest::Client::builder().build().unwrap();
 
+    let map = {
+        let mut tmp = HashMap::new();
+        tmp.insert("infra".to_string(), {
+            let mut infra = HashMap::new();
+            infra.insert(
+                "docs-latest".to_string(),
+                Task::RestartJob {
+                    id: "docs".to_string(),
+                },
+            );
+            infra
+        });
+        tmp
+    };
+
     let app = Router::new()
         .route("/:name", post(webhook))
-        .with_state(Arc::new(AppState { config, client }));
+        .with_state(Arc::new(AppState {
+            config,
+            client,
+            task_map: map,
+        }));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     tracing::debug!("listening on {}", addr);
@@ -54,21 +74,49 @@ async fn webhook(
     State(state): State<Arc<AppState>>,
     Json(content): Json<serde_json::Value>,
 ) -> impl IntoResponse {
-    let task = Task::RestartJob {
-        id: "docs".to_string(),
-    };
+    let req_endpoint = match state.task_map.get(&name) {
+        Some(endp) => endp,
+        None => {
+            tracing::error!("Unexpected Webhook endpoint '{name}'");
 
-    task.perform(&state.config, &state.client).await;
+            return axum::response::Response::builder()
+                .status(axum::http::StatusCode::NOT_FOUND)
+                .body(String::new())
+                .unwrap();
+        }
+    };
 
     tracing::info!("Webhook '{name}'");
 
-    if webhook::GithubPackagePayload::is_package(&content) {
-        let payload = webhook::GithubPackagePayload::into_package(content).unwrap();
+    let payload = match webhook::GithubPackagePayload::into_package(content) {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::error!("Parsing Payload {:?}", e);
 
-        tracing::info!("Payload: {:#?}", payload);
-    } else {
-        tracing::info!("Unknown Payload: {:#?}", content);
-    }
+            return axum::response::Response::builder()
+                .status(axum::http::StatusCode::BAD_REQUEST)
+                .body(String::new())
+                .unwrap();
+        }
+    };
+
+    let tag = &payload.package.package_version.container_metadata.tag;
+
+    let task = match req_endpoint.get(&tag.name) {
+        Some(t) => t,
+        None => {
+            tracing::error!("Payload: {:#?}", payload);
+
+            return axum::response::Response::builder()
+                .status(axum::http::StatusCode::BAD_REQUEST)
+                .body(String::new())
+                .unwrap();
+        }
+    };
+
+    tracing::info!("Performing Task: {:?}", task);
+
+    task.perform(&state.config, &state.client).await;
 
     axum::response::Response::builder()
         .status(200)

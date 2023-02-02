@@ -2,41 +2,40 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct GithubPackagePayload {
-    action: String,
-    package: GithubPackage,
-    repository: serde_json::Value,
-    sender: serde_json::Value,
+    pub action: String,
+    pub package: GithubPackage,
+    pub repository: serde_json::Value,
+    pub sender: serde_json::Value,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GithubPackage {
-    ic: usize,
-    name: String,
-    namespace: String,
-    description: String,
-    package_type: String,
-    package_version: GithubPackageVersion,
-    registry: GithubPacakgeRegistry,
+    pub id: usize,
+    pub name: String,
+    pub namespace: String,
+    pub description: String,
+    pub package_type: String,
+    pub package_version: GithubPackageVersion,
+    pub registry: GithubPacakgeRegistry,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GithubPackageVersion {
-    name: String,
-    tag_name: String,
-    version: String,
-    container_metadata: GithubContainerMetadata,
-    package_url: String,
+    pub name: String,
+    pub version: String,
+    pub container_metadata: GithubContainerMetadata,
+    pub package_url: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GithubContainerMetadata {
-    tag: GithubContainerTag,
+    pub tag: GithubContainerTag,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GithubContainerTag {
-    name: String,
-    digest: String,
+    pub name: String,
+    pub digest: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -67,6 +66,9 @@ impl GithubPackagePayload {
     }
 
     pub fn into_package(raw: serde_json::Value) -> Result<Self, ()> {
-        serde_json::from_value(raw).map_err(|_| ())
+        serde_json::from_value(raw).map_err(|e| {
+            println!("{e}");
+            ()
+        })
     }
 }

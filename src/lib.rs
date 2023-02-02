@@ -24,7 +24,7 @@ impl NomadConfig {
 }
 
 impl Task {
-    #[instrument]
+    #[instrument(skip(req_client))]
     pub async fn perform(&self, config: &NomadConfig, req_client: &reqwest::Client) {
         match self {
             Self::RestartJob { id } => {
