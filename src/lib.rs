@@ -113,7 +113,7 @@ mod nomad {
         let target_url = config
             .endpoint
             .join(&format!("/v1/client/allocation/{id}/restart"))
-            .unwrap();
+            .map_err(|_| ())?;
 
         let body = json!({ "AllTasks": true });
 
@@ -122,7 +122,11 @@ mod nomad {
             .body(serde_json::to_string(&body).unwrap())
             .send()
             .await
-            .unwrap();
+            .map_err(|_| ())?;
+
+        if !resp.status().is_success() {
+            return Err(());
+        }
 
         Ok(())
     }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, future::IntoFuture, net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use axum::{
     extract::{Path, State},

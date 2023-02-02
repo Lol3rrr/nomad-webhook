@@ -40,9 +40,9 @@ pub struct GithubContainerTag {
 
 #[derive(Debug, Deserialize)]
 pub struct GithubPacakgeRegistry {
-    name: String,
-    url: String,
-    vendor: String,
+    pub name: String,
+    pub url: String,
+    pub vendor: String,
 }
 
 impl GithubPackagePayload {
@@ -65,10 +65,7 @@ impl GithubPackagePayload {
         action.eq_ignore_ascii_case("published") || action.eq_ignore_ascii_case("updated")
     }
 
-    pub fn into_package(raw: serde_json::Value) -> Result<Self, ()> {
-        serde_json::from_value(raw).map_err(|e| {
-            println!("{e}");
-            ()
-        })
+    pub fn into_package(raw: serde_json::Value) -> Result<Self, serde_json::Error> {
+        serde_json::from_value(raw)
     }
 }
