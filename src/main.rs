@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, sync::Arc};
 
 use axum::{
     extract::{Path, State},
@@ -6,7 +6,7 @@ use axum::{
     routing::post,
     Json, Router,
 };
-use nomad_webhook::{webhook, NomadConfig, Task};
+use nomad_webhook::{webhook, Config, NomadConfig};
 use tracing::instrument;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
@@ -14,12 +14,17 @@ use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::Subs
 struct AppState {
     config: NomadConfig,
     client: reqwest::Client,
-    task_map: HashMap<String, HashMap<String, Task>>,
+    task_map: Config,
 }
 
 #[tokio::main]
 async fn main() {
     let machine_log = std::env::var("LOG_MACHINE").is_ok();
+
+    let config_file_path = std::env::var("CONF_FILE").unwrap_or_else(|_| "config.json".to_string());
+
+    let current_path = std::env::current_dir().unwrap();
+    let config_path = current_path.join(config_file_path);
 
     tracing_subscriber::registry()
         .with(
@@ -33,31 +38,18 @@ async fn main() {
     let address = std::env::var("NOMAD_ADDR").unwrap_or_else(|_| "localhost".to_string());
     let port = std::env::var("NOMAD_PORT").unwrap_or_else(|_| "4646".to_string());
 
-    let config = NomadConfig::new(format!("http://{address}:{port}"));
+    let nomad_config = NomadConfig::new(format!("http://{address}:{port}"));
 
     let client = reqwest::Client::builder().build().unwrap();
 
-    let map = {
-        let mut tmp = HashMap::new();
-        tmp.insert("infra".to_string(), {
-            let mut infra = HashMap::new();
-            infra.insert(
-                "docs-latest".to_string(),
-                Task::RestartJob {
-                    id: "docs".to_string(),
-                },
-            );
-            infra
-        });
-        tmp
-    };
+    let config = Config::load(&config_path).await.unwrap();
 
     let app = Router::new()
         .route("/:name", post(webhook))
         .with_state(Arc::new(AppState {
-            config,
+            config: nomad_config,
             client,
-            task_map: map,
+            task_map: config,
         }));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
@@ -74,7 +66,7 @@ async fn webhook(
     State(state): State<Arc<AppState>>,
     Json(content): Json<serde_json::Value>,
 ) -> impl IntoResponse {
-    let req_endpoint = match state.task_map.get(&name) {
+    let req_endpoint = match state.task_map.endpoints.get(&name) {
         Some(endp) => endp,
         None => {
             tracing::error!("Unexpected Webhook endpoint '{name}'");

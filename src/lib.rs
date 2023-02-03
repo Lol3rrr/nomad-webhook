@@ -1,8 +1,27 @@
+use std::{collections::HashMap, path::Path};
+
+use serde::Deserialize;
 use tracing::instrument;
 
 pub mod webhook;
 
 #[derive(Debug)]
+pub struct Config {
+    pub endpoints: HashMap<String, HashMap<String, Task>>,
+}
+
+impl Config {
+    pub async fn load(path: &Path) -> Result<Self, ()> {
+        let content = tokio::fs::read(path).await.map_err(|_| ())?;
+
+        let endpoints: HashMap<String, HashMap<String, Task>> =
+            serde_json::from_slice(&content).map_err(|_| ())?;
+
+        Ok(Self { endpoints })
+    }
+}
+
+#[derive(Debug, Deserialize)]
 pub enum Task {
     RestartJob { id: String },
 }
