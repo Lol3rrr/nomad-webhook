@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
 use axum::{
     extract::{Path, State},
@@ -21,10 +21,11 @@ struct AppState {
 async fn main() {
     let machine_log = std::env::var("LOG_MACHINE").is_ok();
 
-    let config_file_path = std::env::var("CONF_FILE").unwrap_or_else(|_| "config.json".to_string());
-
     let current_path = std::env::current_dir().unwrap();
-    let config_path = current_path.join(config_file_path);
+    let config_path = match std::env::var("CONF_FILE") {
+        Ok(f) => PathBuf::from(f),
+        Err(_) => current_path.join("config.json"),
+    };
 
     tracing_subscriber::registry()
         .with(
