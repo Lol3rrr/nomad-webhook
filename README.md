@@ -25,3 +25,6 @@ The Configuration in JSON Form
     }
 }
 ```
+
+### Github Webhook
+Create a Github Webhook pointing to `[domain]/name` and using the `application/json` content type, with the `package` Option
