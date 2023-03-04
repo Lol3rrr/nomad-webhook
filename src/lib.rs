@@ -58,11 +58,11 @@ impl Task {
                 let allocs = job_allocs
                     .allocs
                     .into_iter()
-                    .filter(|alloc| alloc.ClientStatus == "running");
+                    .filter(|alloc| alloc.client_status == "running");
 
                 for alloc in allocs {
-                    if let Err(e) = nomad::restart_allocation(&alloc.ID, config, req_client).await {
-                        tracing::error!("Restarting Allocation ({}): {:?}", alloc.ID, e);
+                    if let Err(e) = nomad::restart_allocation(&alloc.id, config, req_client).await {
+                        tracing::error!("Restarting Allocation ({}): {:?}", alloc.id, e);
                     }
                 }
             }
@@ -77,9 +77,12 @@ mod nomad {
 
     #[derive(Debug, serde::Deserialize)]
     pub struct Allocation {
-        pub ID: String,
-        pub Name: String,
-        pub ClientStatus: String,
+        #[serde(rename = "ID")]
+        pub id: String,
+        #[serde(rename = "Name")]
+        pub name: String,
+        #[serde(rename = "ClientStatus")]
+        pub client_status: String,
     }
 
     #[derive(Debug)]
