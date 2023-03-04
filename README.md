@@ -9,6 +9,8 @@ the Nomad Job
 ## Environment Variables
 * `LOG_MACHINE` can be set to enable a machine readable (json) logging format
 * `CONF_FILE` Specifies the Path to the configuration File (default: config.json)
+* `NOMAD_ADDR` The domain or IP of the Nomad Server (default: localhost)
+* `NOMAD_PORT` The port of the Nomad Server (default: 4646)
 
 ## Configuration File
 The Configuration in JSON Form
